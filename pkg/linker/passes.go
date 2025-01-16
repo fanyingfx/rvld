@@ -31,11 +31,16 @@ func MarkLiveObjects(ctx *Context) {
 		if !file.IsAlive {
 			continue
 		}
-		file.MarkLiveObjects(ctx, func(file *ObjectFile) {
+		file.MarkLiveObjects(func(file *ObjectFile) {
 			roots = append(roots, file)
 		})
 		roots = roots[1:]
 
 	}
 
+}
+func RegisterSectionPieces(ctx *Context) {
+	for _, file := range ctx.Objs {
+		file.RegisterSectionPieces()
+	}
 }

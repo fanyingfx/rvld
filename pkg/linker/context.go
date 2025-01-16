@@ -6,9 +6,10 @@ type ContextArgs struct {
 	LibraryPaths []string
 }
 type Context struct {
-	Args      ContextArgs
-	Objs      []*ObjectFile
-	SymbolMap map[string]*Symbol
+	Args           ContextArgs
+	Objs           []*ObjectFile
+	SymbolMap      map[string]*Symbol
+	MergedSections []*MergedSection
 }
 
 func NewContext() *Context {

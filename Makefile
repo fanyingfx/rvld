@@ -14,5 +14,6 @@ $(TESTS):
 clean:
 	go clean
 	rm -rf out/
+	rm  ld
 
 .PHONY: build clean $(TESTS)

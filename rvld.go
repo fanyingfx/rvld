@@ -34,16 +34,7 @@ func main() {
 	// fmt.Printf("#{remaining}\n")
 	linker.ReadInputFiles(ctx, remaining)
 	linker.ResolveSymbols(ctx)
-	println(len(ctx.Objs))
-	for _, obj := range ctx.Objs {
-		if obj.File.Name == "out/tests/hello/a.o" {
-			for _, sym := range obj.Symbols {
-				if sym.Name == "puts" {
-					println(sym.File.File.Parent.Name)
-				}
-			}
-		}
-	}
+	linker.RegisterSectionPieces(ctx)
 
 }
 func parseArgs(ctx *linker.Context) []string {

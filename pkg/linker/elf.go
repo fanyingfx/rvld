@@ -58,6 +58,9 @@ func (s *Sym) IsAbs() bool {
 func (s *Sym) IsUndef() bool {
 	return s.Shndx == uint16(elf.SHN_UNDEF)
 }
+func (s *Sym) IsCommon() bool {
+	return s.Shndx == uint16(elf.SHN_COMMON)
+}
 
 type ArHdr struct {
 	Name [16]byte
