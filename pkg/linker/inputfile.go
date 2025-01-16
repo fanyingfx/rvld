@@ -1,12 +1,22 @@
 package linker
 
 import (
+	"debug/elf"
+	"fmt"
+
 	"github.com/fanyingfx/rvld/pkg/utils"
 )
 
 type InputFile struct {
-	File        *File
-	ElfSections []Shdr
+	File         *File
+	ElfSections  []Shdr
+	ElfSyms      []Sym
+	FirstGlobal  int
+	ShStrtab     []byte
+	SymbolStrtab []byte
+	IsAlive      bool
+	Symbols      []*Symbol
+	LocalSymbols []Symbol
 }
 
 func NewInputFile(file *File) InputFile {
@@ -31,6 +41,36 @@ func NewInputFile(file *File) InputFile {
 		f.ElfSections = append(f.ElfSections, utils.Read[Shdr](contents))
 		numSections--
 	}
+	shstrndx := int64(ehdr.ShStrndx)
+	if ehdr.ShStrndx == uint16(elf.SHN_XINDEX) {
+		shstrndx = int64(shdr.Link)
+	}
+	f.ShStrtab = f.GetBytesFromIdx(shstrndx)
 
 	return f
+}
+
+func (f *InputFile) GetBytesFromShdr(s *Shdr) []byte {
+	end := s.Offset + s.Size
+	if uint64(len(f.File.Contents)) < end {
+		utils.Fatal(fmt.Sprintf("section header is out of range: %d", s.Offset))
+	}
+	return f.File.Contents[s.Offset:end]
+}
+func (f *InputFile) GetBytesFromIdx(idx int64) []byte {
+	return f.GetBytesFromShdr(&f.ElfSections[idx])
+}
+func (f *InputFile) fillUpElfSyms(s *Shdr) {
+	bs := f.GetBytesFromShdr(s)
+	f.ElfSyms = utils.ReadSlice[Sym](bs, SymSize)
+
+}
+func (f *InputFile) FindSection(ty uint32) *Shdr {
+	for i := 0; i < len(f.ElfSections); i++ {
+		shdr := &f.ElfSections[i]
+		if shdr.Type == ty {
+			return shdr
+		}
+	}
+	return nil
 }
