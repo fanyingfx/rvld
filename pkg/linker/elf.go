@@ -10,8 +10,11 @@ import (
 	"github.com/fanyingfx/rvld/pkg/utils"
 )
 
+const EF_RISCV_RVC uint32 = 1
+const IMAGE_BASE uint64 = 0x200000
 const EhdrSize = int(unsafe.Sizeof(Ehdr{}))
 const ShdrSize = int(unsafe.Sizeof(Shdr{}))
+const PhdrSize = int(unsafe.Sizeof(Phdr{}))
 const SymSize = int(unsafe.Sizeof(Sym{}))
 const ArHdrSize = int(unsafe.Sizeof(ArHdr{}))
 
@@ -40,7 +43,7 @@ type Shdr struct {
 	Size      uint64
 	Link      uint32
 	Info      uint32
-	AddrAlgin uint64
+	AddrAlign uint64
 	EntSize   uint64
 }
 type Sym struct {
@@ -70,6 +73,16 @@ type ArHdr struct {
 	Mode [8]byte
 	Size [10]byte
 	Fmag [2]byte
+}
+type Phdr struct {
+	Type     uint32
+	Flags    uint32
+	Offset   uint64
+	VAddr    uint64
+	PAddr    uint64
+	FileSize uint64
+	MemSize  uint64
+	Align    uint64
 }
 
 func (arhdr *ArHdr) HasPrefix(s string) bool {

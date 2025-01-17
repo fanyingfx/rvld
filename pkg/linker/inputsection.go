@@ -8,15 +8,17 @@ import (
 )
 
 type InputSection struct {
-	File     *ObjectFile
-	Contents []byte
-	Shndx    uint32
-	ShSize   uint32
-	IsAlive  bool
-	P2Align  uint8 // power_of_2
+	File          *ObjectFile
+	Contents      []byte
+	Shndx         uint32
+	ShSize        uint32
+	IsAlive       bool
+	P2Align       uint8 // power_of_2
+	Offset        uint32
+	OutputSection *OutputSection
 }
 
-func NewInputSection(file *ObjectFile, shndx uint32) *InputSection {
+func NewInputSection(ctx *Context, name string, file *ObjectFile, shndx uint32) *InputSection {
 	s := &InputSection{
 		File:    file,
 		Shndx:   shndx,
@@ -33,7 +35,8 @@ func NewInputSection(file *ObjectFile, shndx uint32) *InputSection {
 		}
 		return uint8(bits.TrailingZeros64(align))
 	}
-	s.P2Align = toP2Align(shdr.AddrAlgin)
+	s.P2Align = toP2Align(shdr.AddrAlign)
+	s.OutputSection = GetOutputSection(ctx, name, uint64(shdr.Type), shdr.Flags)
 
 	return s
 }
@@ -43,4 +46,15 @@ func (i *InputSection) Shdr() *Shdr {
 }
 func (i *InputSection) Name() string {
 	return ElfGetName(i.File.ShStrtab, i.Shdr().Name)
+}
+func (i *InputSection) WriteTo(buf []byte) {
+	if i.Shdr().Type == uint32(elf.SHT_NOBITS) || i.ShSize == 0 {
+		return
+
+	}
+	i.CopyContents(buf)
+
+}
+func (i *InputSection) CopyContents(buf []byte) {
+	copy(buf, i.Contents)
 }

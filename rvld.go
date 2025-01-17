@@ -31,10 +31,30 @@ func main() {
 	if ctx.Args.Emulation != linker.MachineTypeRISCV64 {
 		utils.Fatal("unknown emulation type")
 	}
-	// fmt.Printf("#{remaining}\n")
 	linker.ReadInputFiles(ctx, remaining)
+	linker.CreateInternalFile(ctx)
 	linker.ResolveSymbols(ctx)
 	linker.RegisterSectionPieces(ctx)
+	linker.CreateSyntheticSections(ctx)
+	linker.BinSections(ctx)
+	ctx.Chunks = append(ctx.Chunks, linker.CollectOutputSections(ctx)...)
+	linker.ComputeSectionSizes(ctx)
+	linker.SortOutputSections(ctx)
+	for _, chunk := range ctx.Chunks {
+		chunk.UpdateShdr(ctx)
+	}
+
+	fileSize := linker.SetOutputSectionOffsets(ctx)
+	println(fileSize)
+	ctx.Buf = make([]byte, fileSize)
+	file, err := os.OpenFile(ctx.Args.Output, os.O_RDWR|os.O_CREATE, 0777)
+	utils.MustNo(err)
+	for _, chunk := range ctx.Chunks {
+		chunk.CopyBuf(ctx)
+	}
+	_, err = file.Write(ctx.Buf)
+	utils.MustNo(err)
+	file.Close()
 
 }
 func parseArgs(ctx *linker.Context) []string {

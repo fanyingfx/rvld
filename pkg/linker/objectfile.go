@@ -30,14 +30,14 @@ func (o *ObjectFile) Parse(ctx *Context) {
 		o.SymbolStrtab = o.GetBytesFromIdx(int64(o.SymtabSec.Link))
 	}
 	// initialize sections
-	o.IntilizeSections()
+	o.IntilizeSections(ctx)
 	o.IntializeSymbols(ctx)
 	o.InitializeMergeableSections(ctx)
 
 	// Initialize mergeable sections
 
 }
-func (o *ObjectFile) IntilizeSections() {
+func (o *ObjectFile) IntilizeSections(ctx *Context) {
 	o.Sections = make([]*InputSection, len(o.ElfSections))
 	for i := 0; i < len(o.ElfSections); i++ {
 		shdr := &o.ElfSections[i]
@@ -47,7 +47,8 @@ func (o *ObjectFile) IntilizeSections() {
 		case elf.SHT_SYMTAB_SHNDX:
 			o.FillUpSymtabShndxSec(shdr)
 		default:
-			o.Sections[i] = NewInputSection(o, uint32(i))
+			name := ElfGetName(o.InputFile.ShStrtab, shdr.Name)
+			o.Sections[i] = NewInputSection(ctx, name, o, uint32(i))
 
 		}
 
@@ -56,12 +57,6 @@ func (o *ObjectFile) IntilizeSections() {
 func (o *ObjectFile) FillUpSymtabShndxSec(s *Shdr) {
 	bs := o.GetBytesFromShdr(s)
 	o.SymtabShndxSec = utils.ReadSlice[uint32](bs, 32)
-	// nums := len(bs) / 4
-	// for nums > 0 {
-	// 	o.SymtabShndxSec = append(o.SymtabShndxSec, utils.Read[uint32](bs))
-	// 	bs = bs[4:]
-	// 	nums--
-	// }
 }
 
 func (o *ObjectFile) IntializeSymbols(ctx *Context) {
