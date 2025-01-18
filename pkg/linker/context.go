@@ -6,12 +6,15 @@ type ContextArgs struct {
 	LibraryPaths []string
 }
 type Context struct {
-	Args           ContextArgs
+	Args ContextArgs
+	Buf  []byte
+
 	Chunks         []IChunk
 	Ehdr           *OutputEhdr
 	Shdr           *OutputShdr
+	Phdr           *OutputPhdr
+	TpAddr         uint64 // thread local pointer
 	OutputSections []*OutputSection
-	Buf            []byte
 	Objs           []*ObjectFile
 	SymbolMap      map[string]*Symbol
 	MergedSections []*MergedSection

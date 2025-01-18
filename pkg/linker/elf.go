@@ -10,6 +10,7 @@ import (
 	"github.com/fanyingfx/rvld/pkg/utils"
 )
 
+const PageSize = 4096
 const EF_RISCV_RVC uint32 = 1
 const IMAGE_BASE uint64 = 0x200000
 const EhdrSize = int(unsafe.Sizeof(Ehdr{}))

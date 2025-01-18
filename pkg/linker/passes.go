@@ -71,9 +71,8 @@ func CreateSyntheticSections(ctx *Context) {
 		return chunk
 	}
 	ctx.Ehdr = push(NewOutputEhdr()).(*OutputEhdr)
-	// ctx.Chunks = append(ctx.Chunks, ctx.Ehdr)
 	ctx.Shdr = push(NewOutputShdr()).(*OutputShdr)
-	// ctx.Chunks = append(ctx.Chunks, ctx.Shdr)
+	ctx.Phdr = push(NewOutputPhdr()).(*OutputPhdr)
 }
 
 func SetOutputSectionOffsets(ctx *Context) uint64 {
@@ -135,6 +134,11 @@ func CollectOutputSections(ctx *Context) []IChunk {
 		}
 
 	}
+	for _, osec := range ctx.MergedSections {
+		if osec.Shdr.Size > 0 {
+			osecs = append(osecs, osec)
+		}
+	}
 	return osecs
 }
 func ComputeSectionSizes(ctx *Context) {
@@ -159,6 +163,9 @@ func SortOutputSections(ctx *Context) {
 		flags := chunk.GetShdr().Flags
 		if chunk == ctx.Ehdr {
 			return 0
+		}
+		if chunk == ctx.Phdr {
+			return 1
 		}
 		if typ == uint32(elf.SHT_NOTE) {
 			return 2
@@ -186,7 +193,21 @@ func SortOutputSections(ctx *Context) {
 		return rank(ctx.Chunks[i]) < rank(ctx.Chunks[j])
 	})
 }
+func ComputeMergedSectionSizes(ctx *Context) {
+	for _, osec := range ctx.MergedSections {
+		osec.AssignOffsets()
+	}
+}
+
 func isTbss(chunk IChunk) bool {
 	shdr := chunk.GetShdr()
 	return shdr.Type == uint32(elf.SHT_NOBITS) && shdr.Flags&uint64(elf.SHF_TLS) != 0
+}
+func (m *MergedSection) CopyBuf(ctx *Context) {
+	buf := ctx.Buf[m.Shdr.Offset:]
+	for key := range m.Map {
+		if frag, ok := m.Map[key]; ok {
+			copy(buf[frag.Offset:], key)
+		}
+	}
 }
