@@ -39,6 +39,7 @@ func main() {
 	linker.CreateSyntheticSections(ctx)
 	linker.BinSections(ctx)
 	ctx.Chunks = append(ctx.Chunks, linker.CollectOutputSections(ctx)...)
+	linker.ScanRelocations(ctx)
 	linker.ComputeSectionSizes(ctx)
 	linker.SortOutputSections(ctx)
 	for _, chunk := range ctx.Chunks {

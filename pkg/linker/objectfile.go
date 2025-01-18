@@ -3,6 +3,7 @@ package linker
 import (
 	"bytes"
 	"debug/elf"
+	"math"
 
 	"github.com/fanyingfx/rvld/pkg/utils"
 )
@@ -33,6 +34,7 @@ func (o *ObjectFile) Parse(ctx *Context) {
 	o.IntilizeSections(ctx)
 	o.IntializeSymbols(ctx)
 	o.InitializeMergeableSections(ctx)
+	o.SkipEhframSections()
 
 	// Initialize mergeable sections
 
@@ -52,6 +54,17 @@ func (o *ObjectFile) IntilizeSections(ctx *Context) {
 
 		}
 
+	}
+	for i := 0; i < len(o.ElfSections); i++ {
+		shdr := &o.InputFile.ElfSections[i]
+		if shdr.Type != uint32(elf.SHT_RELA) {
+			continue
+		}
+		utils.Assert(shdr.Info < uint32(len(o.Sections)))
+		if target := o.Sections[shdr.Info]; target != nil {
+			utils.Assert(target.RelsecIdx == math.MaxUint32)
+			target.RelsecIdx = uint32(i)
+		}
 	}
 }
 func (o *ObjectFile) FillUpSymtabShndxSec(s *Shdr) {
@@ -236,4 +249,18 @@ func (o *ObjectFile) RegisterSectionPieces() {
 
 	}
 
+}
+func (o *ObjectFile) SkipEhframSections() {
+	for _, isec := range o.Sections {
+		if isec != nil && isec.IsAlive && isec.Name() == ".eh_frame" {
+			isec.IsAlive = false
+		}
+	}
+}
+func (o *ObjectFile) ScanRelocations() {
+	for _, isec := range o.Sections {
+		if isec != nil && isec.IsAlive && isec.Shdr().Flags&uint64(elf.SHF_ALLOC) != 0 {
+			isec.ScanRelocations()
+		}
+	}
 }
